@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Knowledge Base - Home">
+  <main class="min-h-screen flex items-center justify-center p-8">
+    <div class="max-w-2xl text-center">
+      <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+        Welcome to the Knowledge Base
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
+        Your internal documentation and knowledge hub, powered by Astro and TypeScript.
+      </p>
+      <div class="flex gap-4 justify-center">
+        <a
+          href="/agentic-knowledge-base/docs"
+          class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        >
+          Browse Documentation
+        </a>
+        <a
+          href="https://github.com/wlfmnstr/agentic-knowledge-base"
+          class="px-6 py-3 border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 rounded-lg font-medium transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View on GitHub
+        </a>
+      </div>
+      <div class="mt-12 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          <strong>Phase 2:</strong> Project initialized with Astro, TypeScript, and Tailwind CSS.
+        </p>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
