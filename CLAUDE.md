@@ -1,7 +1,7 @@
 # Agentic Knowledge Base - Project Memory
 
-**Status:** Phase 1 Complete - Agentic Scaffolding Ready
-**Current Phase:** Ready for Phase 2 - Project Initialization
+**Status:** Phase 2 Complete - Project Initialized and Deployed
+**Current Phase:** Ready for Phase 3 - Content Modeling & Structure
 **Last Updated:** 2025-11-05
 
 ---
@@ -37,8 +37,8 @@ This project follows an **agent-driven iterative development** approach:
 ### Project Phases (Planned)
 
 - ✅ **Phase 1:** Agentic scaffolding setup
-- 🔜 **Phase 2:** Project initialization and technology selection
-- 📋 **Phase 3:** Content modeling and structure
+- ✅ **Phase 2:** Project initialization and technology selection
+- 🔜 **Phase 3:** Content modeling and structure
 - 📋 **Phase 4:** Core UI and layout
 - 📋 **Phase 5:** Content features (search, navigation)
 - 📋 **Phase 6:** Deployment pipeline
@@ -51,14 +51,24 @@ This project follows an **agent-driven iterative development** approach:
 
 ### Decisions Made
 
-None yet - starting fresh.
+**Phase 2 Technology Stack:**
+- **Static Site Framework:** Astro v4.x
+  - *Rationale:* Content-first architecture, TypeScript-native, excellent performance (ships zero JS by default), built-in Content Collections with type-safe schemas
+- **Styling:** Tailwind CSS v3.x
+  - *Rationale:* Rapid prototyping, utility-first approach, small production bundle, easy to extend later
+- **Content Management:** Astro Content Collections + MDX + Zod
+  - *Rationale:* Type-safe content with compile-time validation, catches errors during build
+- **Deployment:** GitHub Actions → GitHub Pages
+  - *Rationale:* Zero cost, integrated with source control, simple workflow
+- **Repository:** Public (for now)
+  - *Rationale:* Free GitHub Pages hosting, can move to private later if needed
 
 ### Decisions Deferred
 
-- **Static site framework:** Considering Astro as primary option, but decision will be made in Phase 2 after evaluation
-- **Content editing solution:** Explicitly deferred until core system is working
-- **Search implementation:** Will evaluate options during Phase 5
-- **Component library:** May use existing library or build custom - TBD
+- **Content editing solution:** Explicitly deferred until core system is working (Phase 7)
+- **Search implementation:** Will evaluate options during Phase 5 (Pagefind recommended)
+- **Component library:** May use shadcn/ui or Headless UI later if complex components needed
+- **Theme system:** Basic dark/light mode planned for Phase 4
 
 ### Technology Constraints
 
@@ -80,14 +90,26 @@ None yet - starting fresh.
 - Defined 5 workflow commands for common tasks
 - Repository structure initialized
 
+**Phase 2: Project Initialization**
+- Evaluated static site frameworks (chose Astro over Next.js, VitePress, Gatsby)
+- Initialized Astro v4 with TypeScript strict mode
+- Configured Tailwind CSS for styling
+- Set up Content Collections with Zod schemas for type-safe content
+- Created base layouts (BaseLayout, DocLayout) and global styles
+- Created sample MDX documentation pages (index, getting-started)
+- Configured GitHub Actions deployment workflow
+- Successfully tested production build
+- Documented all technology decisions and rationale
+
 ### 🔜 Next Steps
 
-**Phase 2: Project Initialization**
-1. Evaluate static site frameworks (Astro primary candidate, but also consider Next.js, Gatsby, VitePress)
-2. Initialize chosen framework with TypeScript
-3. Set up project structure (content directory, base configuration)
-4. Create hello-world deployment to verify GitHub Pages workflow
-5. Document technology choices and rationale in CLAUDE.md
+**Phase 3: Content Modeling & Structure**
+1. Design comprehensive content schema (expand beyond current base schema)
+2. Create content authoring guidelines and templates
+3. Build navigation generation system (auto-generate sidebar from content)
+4. Add breadcrumbs and prev/next navigation
+5. Create additional example pages across different categories
+6. Test content organization patterns
 
 ### 🚧 Blockers
 
@@ -103,13 +125,42 @@ None currently.
 - **Skills-based knowledge:** Reusable patterns ready to support development
 - **Workflow automation:** Commands available for common tasks
 - **Memory persistence:** CLAUDE.md provides continuity across sessions
+- **Astro Content Collections:** Type-safe content validation catches errors at build time
+- **Incremental development:** Small iterations working well - project initialized in ~2 hours
 
 ### Important Notes
 
-- **No application code yet:** This session focused purely on agentic scaffolding
-- **Technology choices deferred:** Framework and tooling decisions will be made iteratively in Phase 2
+- **Application structure:** Clean separation between layouts, pages, and content
+- **Build validation:** Type checking and content validation happen before deployment
+- **MDX gotchas:** Escaped backticks don't work in MDX - use actual code blocks instead
 - **Content editing deferred:** Explicitly saved for later - focus on core functionality first
 - **Internal tool focus:** No need for SEO, analytics, or social features
+
+### Technical Details
+
+**Project Structure:**
+```
+src/
+├── content/         # Type-safe MDX content
+│   ├── config.ts    # Zod schemas
+│   └── docs/        # Documentation pages
+├── layouts/         # Page layouts
+│   ├── BaseLayout.astro
+│   └── DocLayout.astro
+├── pages/           # Routes
+│   ├── index.astro
+│   └── docs/
+│       ├── index.astro
+│       └── [...slug].astro
+└── styles/          # Global CSS
+    └── global.css
+```
+
+**URLs:**
+- Homepage: `/`
+- Docs index: `/docs`
+- Individual pages: `/docs/{slug}`
+- All routes include base path: `/agentic-knowledge-base/`
 
 ### Patterns to Follow
 

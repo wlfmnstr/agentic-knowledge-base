@@ -1,0 +1,162 @@
+---
+title: Getting Started
+description: Learn how to use and contribute to the knowledge base
+date: 2025-11-05
+order: 2
+category: Getting Started
+tags: [tutorial, basics]
+---
+
+# Getting Started
+
+Welcome! This guide will help you understand how to use and contribute to this knowledge base.
+
+## For Readers
+
+### Navigating the Documentation
+
+The documentation is organized into categories and can be accessed through:
+
+- **Homepage**: Quick links to major sections
+- **Navigation menu**: Browse all available documentation
+- **Search** (coming soon): Find specific topics quickly
+
+### Reading Documentation
+
+Each documentation page includes:
+
+- **Title and description**: Quick overview of the content
+- **Category**: Topic grouping
+- **Tags**: Related keywords for discovery
+- **Table of contents**: Jump to specific sections (coming in Phase 4)
+
+## For Contributors
+
+### Writing Documentation
+
+Documentation is written in **MDX** (Markdown + JSX), which means you can:
+
+1. Use standard Markdown syntax
+2. Add interactive components
+3. Include code examples with syntax highlighting
+4. Create custom layouts
+
+### File Structure
+
+Add new documentation by creating `.mdx` files in `src/content/docs/`:
+
+```
+src/content/docs/
+├── index.mdx           # Documentation homepage
+├── getting-started.mdx # This file
+└── guides/             # Organized in subdirectories
+    └── example.mdx
+```
+
+### Frontmatter Schema
+
+Every documentation page must include frontmatter with these fields:
+
+```yaml
+---
+title: Page Title              # Required
+description: Short description # Required
+date: 2025-11-05              # Optional - publication date
+order: 1                       # Optional - manual ordering
+category: Category Name        # Optional - grouping
+tags: [tag1, tag2]            # Optional - keywords
+draft: false                   # Optional - hide from production
+sidebar: true                  # Optional - show in navigation
+---
+```
+
+### Creating a New Page
+
+1. Create a new `.mdx` file in `src/content/docs/`
+2. Add required frontmatter
+3. Write your content using Markdown
+4. Commit and push - GitHub Actions will deploy automatically
+
+Example:
+
+```mdx
+---
+title: My New Guide
+description: A comprehensive guide to something awesome
+category: Tutorials
+tags: [advanced, examples]
+---
+
+# My New Guide
+
+Your content here...
+```
+
+## Content Guidelines
+
+### Writing Style
+
+- **Be concise**: Get to the point quickly
+- **Use examples**: Show, don't just tell
+- **Structure content**: Use headings, lists, and code blocks
+- **Link related content**: Help readers discover more
+
+### Code Examples
+
+Use syntax highlighting for code by wrapping it in triple backticks with the language name:
+
+**TypeScript example:**
+
+```typescript
+// TypeScript example
+interface User {
+  name: string;
+  email: string;
+}
+```
+
+**Bash commands:**
+
+```bash
+# Shell commands
+npm install
+npm run dev
+```
+
+### Links
+
+- **Internal links**: Use relative paths `/agentic-knowledge-base/docs/page`
+- **External links**: Include `https://` and open in new tab if appropriate
+
+## Development Workflow
+
+### Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Type check
+npm run type-check
+```
+
+### Deployment
+
+Changes pushed to the `main` branch are automatically deployed via GitHub Actions.
+
+## Next Steps
+
+- Explore existing documentation
+- Start writing your first page
+- Join the conversation on GitHub
+
+Happy documenting! 📚

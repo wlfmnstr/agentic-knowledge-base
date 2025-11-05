@@ -1,0 +1,102 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Get all published docs, sorted by order
+const docs = await getCollection('docs', ({ data }) => {
+  return !data.draft;
+});
+
+// Sort by order field, then by title
+const sortedDocs = docs.sort((a, b) => {
+  const orderA = a.data.order ?? 999;
+  const orderB = b.data.order ?? 999;
+  if (orderA !== orderB) return orderA - orderB;
+  return a.data.title.localeCompare(b.data.title);
+});
+
+// Group by category
+const categorized = sortedDocs.reduce((acc, doc) => {
+  const category = doc.data.category || 'Uncategorized';
+  if (!acc[category]) acc[category] = [];
+  acc[category].push(doc);
+  return acc;
+}, {} as Record<string, typeof docs>);
+---
+
+<BaseLayout title="Documentation | Knowledge Base" description="Browse all documentation">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between">
+          <a href="/agentic-knowledge-base/" class="text-xl font-bold text-gray-900 dark:text-white">
+            Knowledge Base
+          </a>
+          <div class="flex gap-4">
+            <a
+              href="/agentic-knowledge-base/docs"
+              class="text-blue-600 dark:text-blue-400 font-medium"
+            >
+              Documentation
+            </a>
+            <a
+              href="https://github.com/wlfmnstr/agentic-knowledge-base"
+              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">Documentation</h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400">
+          Browse all available documentation and guides.
+        </p>
+      </div>
+
+      {Object.entries(categorized).map(([category, categoryDocs]) => (
+        <section class="mb-12">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{category}</h2>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {categoryDocs.map((doc) => (
+              <a
+                href={`/agentic-knowledge-base/docs/${doc.slug}`}
+                class="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+              >
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  {doc.data.title}
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                  {doc.data.description}
+                </p>
+                {doc.data.tags && doc.data.tags.length > 0 && (
+                  <div class="flex flex-wrap gap-2">
+                    {doc.data.tags.slice(0, 3).map((tag) => (
+                      <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </a>
+            ))}
+          </div>
+        </section>
+      ))}
+    </main>
+
+    <footer class="border-t border-gray-200 dark:border-gray-700 mt-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <p class="text-center text-gray-500 dark:text-gray-400 text-sm">
+          Built with Astro and TypeScript
+        </p>
+      </div>
+    </footer>
+  </div>
+</BaseLayout>
