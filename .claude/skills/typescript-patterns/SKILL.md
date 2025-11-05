@@ -1,110 +1,68 @@
 ---
-name: typescript-patterns
-description: Type-safe development patterns, utility types, and TypeScript best practices
+name: "typescript-patterns"
+description: "TypeScript utility types and type-safe API design patterns. Use when designing type systems, creating utility types, or implementing type-safe patterns."
 ---
 
-# TypeScript Patterns Skill
+# TypeScript Type Design Patterns
 
-Expert knowledge for type-safe development with TypeScript.
+## Utility Type Patterns
 
-## Type Safety Principles
-
-### Prefer Type Inference
+### Built-in Utilities (Quick Reference)
 
 ```typescript
-// Let TypeScript infer when possible
-const count = 42; // inferred as number
-const name = "Alice"; // inferred as string
+// Selection
+Pick<User, 'id' | 'name'>      // Select specific fields
+Omit<User, 'password'>          // Exclude specific fields
 
-// Explicit when needed
-const users: User[] = []; // empty array needs type
+// Modification
+Partial<User>                   // All optional
+Required<User>                  // All required
+Readonly<User>                  // All readonly
 
-// Function return types: explicit for public APIs
-export function getUser(id: string): User | null {
-  // TypeScript can infer, but explicit is clearer
-}
+// Mapping
+Record<string, User>            // Object with User values
+
+// Union manipulation
+Exclude<'a' | 'b' | 'c', 'a'>  // 'b' | 'c'
+Extract<'a' | 'b', 'a' | 'c'>  // 'a'
+NonNullable<T | null>           // T
+
+// Function utilities
+ReturnType<typeof fn>           // Extract return type
+Parameters<typeof fn>           // Extract parameter types
 ```
 
-### Avoid `any`
+### Custom Utility Types
+
+**Make specific fields optional:**
+```typescript
+type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+type UserUpdate = Optional<User, 'email' | 'avatar'>;
+```
+
+**Deep Partial:**
+```typescript
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+```
+
+**Nullable:**
+```typescript
+type Nullable<T> = T | null;
+```
+
+## Discriminated Unions
+
+### Pattern
 
 ```typescript
-// Bad: Loses all type safety
-function process(data: any) {
-  return data.value;
-}
-
-// Good: Use proper types
-function process(data: { value: string }) {
-  return data.value;
-}
-
-// Good: Use generic for flexible types
-function process<T>(data: T): T {
-  return data;
-}
-
-// Good: Use unknown for truly unknown data
-function parse(json: string): unknown {
-  return JSON.parse(json);
-}
-```
-
-### Strict Mode
-
-Always enable strict mode in `tsconfig.json`:
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
-
-## Type Definitions
-
-### Interfaces vs Types
-
-```typescript
-// Interface: For object shapes, extensible
-interface User {
-  id: string;
-  name: string;
-}
-
-interface Admin extends User {
-  role: 'admin';
-}
-
-// Type: For unions, intersections, computed types
-type Status = 'idle' | 'loading' | 'success' | 'error';
-
 type Result<T> =
-  | { status: 'success'; data: T }
-  | { status: 'error'; error: Error };
-
-// Both work for objects, prefer interface for consistency
-// Use type for unions, tuples, complex types
-```
-
-### Union Types
-
-```typescript
-// Literal unions for fixed values
-type Theme = 'light' | 'dark' | 'auto';
-
-// Union of types
-type Response = SuccessResponse | ErrorResponse;
-
-// Discriminated unions
-type Result =
-  | { success: true; data: string }
+  | { success: true; data: T }
   | { success: false; error: string };
 
-function handle(result: Result) {
+function handle<T>(result: Result<T>) {
   if (result.success) {
     // TypeScript knows result.data exists
     console.log(result.data);
@@ -115,58 +73,21 @@ function handle(result: Result) {
 }
 ```
 
-### Intersection Types
+**Critical**: Discriminant must be a literal type (`true`, `'loading'`, etc.).
+
+### API Response Pattern
 
 ```typescript
-// Combine multiple types
-type Timestamped = {
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type User = {
-  id: string;
-  name: string;
-} & Timestamped;
-
-// Combining interfaces
-interface Clickable {
-  onClick: () => void;
-}
-
-interface Hoverable {
-  onHover: () => void;
-}
-
-type Interactive = Clickable & Hoverable;
+type ApiResponse<T> =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; error: Error };
 ```
 
-## Generic Types
+## Generic Type Design
 
-### Basic Generics
-
-```typescript
-// Generic function
-function identity<T>(value: T): T {
-  return value;
-}
-
-// Generic interface
-interface Box<T> {
-  value: T;
-}
-
-// Generic class
-class Container<T> {
-  constructor(private value: T) {}
-
-  getValue(): T {
-    return this.value;
-  }
-}
-```
-
-### Constrained Generics
+### Constraints
 
 ```typescript
 // Constrain to objects with specific properties
@@ -174,8 +95,8 @@ function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
   return obj[key];
 }
 
-// Constrain to types with certain shape
-function processEntity<T extends { id: string }>(entity: T): string {
+// Constrain to specific shape
+function processEntity<T extends { id: string }>(entity: T) {
   return entity.id;
 }
 
@@ -185,7 +106,7 @@ function merge<T extends object, U extends object>(a: T, b: U): T & U {
 }
 ```
 
-### Default Generic Parameters
+### Default Type Parameters
 
 ```typescript
 interface ApiResponse<T = unknown> {
@@ -197,117 +118,10 @@ interface ApiResponse<T = unknown> {
 const response: ApiResponse = { data: "anything", status: 200 };
 
 // Or provide specific type
-const typedResponse: ApiResponse<User> = { data: user, status: 200 };
-```
-
-## Utility Types
-
-### Built-in Utilities
-
-```typescript
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  age: number;
-}
-
-// Partial: All properties optional
-type PartialUser = Partial<User>;
-
-// Required: All properties required
-type RequiredUser = Required<PartialUser>;
-
-// Pick: Select specific properties
-type UserPreview = Pick<User, 'id' | 'name'>;
-
-// Omit: Exclude specific properties
-type UserWithoutEmail = Omit<User, 'email'>;
-
-// Readonly: Make all properties readonly
-type ImmutableUser = Readonly<User>;
-
-// Record: Create object type with specific keys and value type
-type UserMap = Record<string, User>;
-
-// Exclude: Remove types from union
-type ThemeWithoutAuto = Exclude<'light' | 'dark' | 'auto', 'auto'>;
-
-// Extract: Keep only certain types from union
-type PrimaryColors = Extract<'red' | 'blue' | 'green' | 'yellow', 'red' | 'blue'>;
-
-// NonNullable: Remove null and undefined
-type NonNullableUser = NonNullable<User | null | undefined>;
-
-// ReturnType: Extract return type of function
-function getUser() {
-  return { id: '1', name: 'Alice' };
-}
-type UserType = ReturnType<typeof getUser>;
-
-// Parameters: Extract parameter types of function
-function createUser(id: string, name: string) {}
-type CreateUserParams = Parameters<typeof createUser>; // [string, string]
-```
-
-### Custom Utility Types
-
-```typescript
-// Make specific properties optional
-type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
-type UserWithOptionalEmail = Optional<User, 'email'>;
-
-// Make specific properties required
-type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
-
-// Deep partial
-type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
-
-// Nullable
-type Nullable<T> = T | null;
-
-// Awaited type (built-in, but useful to know)
-type AwaitedUser = Awaited<Promise<User>>; // User
+const typed: ApiResponse<User> = { data: user, status: 200 };
 ```
 
 ## Type Guards
-
-### typeof Guards
-
-```typescript
-function process(value: string | number) {
-  if (typeof value === 'string') {
-    // TypeScript knows value is string here
-    return value.toUpperCase();
-  } else {
-    // TypeScript knows value is number here
-    return value.toFixed(2);
-  }
-}
-```
-
-### instanceof Guards
-
-```typescript
-class Dog {
-  bark() { console.log('Woof!'); }
-}
-
-class Cat {
-  meow() { console.log('Meow!'); }
-}
-
-function handle(animal: Dog | Cat) {
-  if (animal instanceof Dog) {
-    animal.bark();
-  } else {
-    animal.meow();
-  }
-}
-```
 
 ### Custom Type Guards
 
@@ -328,11 +142,10 @@ function isAdmin(user: User | Admin): user is Admin {
   return user.type === 'admin';
 }
 
-function greet(user: User | Admin) {
-  if (isAdmin(user)) {
-    // TypeScript knows user is Admin
-    console.log(user.permissions);
-  }
+// Usage
+if (isAdmin(user)) {
+  // TypeScript knows user is Admin
+  console.log(user.permissions);
 }
 ```
 
@@ -352,9 +165,41 @@ function process(value: string | null) {
 }
 ```
 
-## Advanced Patterns
+## Conditional Types
 
-### Mapped Types
+### Basic Pattern
+
+```typescript
+type IsString<T> = T extends string ? true : false;
+
+type A = IsString<string>; // true
+type B = IsString<number>; // false
+```
+
+### Extract Return Type
+
+```typescript
+type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+
+function getUser() {
+  return { id: '1', name: 'Alice' };
+}
+
+type User = ReturnType<typeof getUser>;  // { id: string; name: string }
+```
+
+### Unwrap Promise
+
+```typescript
+type Unwrap<T> = T extends Promise<infer U> ? U : T;
+
+type Result = Unwrap<Promise<string>>;  // string
+type Direct = Unwrap<number>;           // number
+```
+
+## Mapped Types
+
+### Transform Properties
 
 ```typescript
 // Make all properties optional
@@ -363,121 +208,55 @@ type Optional<T> = {
 };
 
 // Make all properties readonly
-type ReadonlyType<T> = {
+type Readonly<T> = {
   readonly [P in keyof T]: T[P];
 };
 
-// Transform property types
+// Transform all to string
 type Stringify<T> = {
   [P in keyof T]: string;
 };
+```
 
-// Conditional property types
+### Conditional Property Types
+
+```typescript
+// Make all properties nullable
 type Nullable<T> = {
   [P in keyof T]: T[P] | null;
 };
 ```
 
-### Conditional Types
+## Template Literal Types
+
+### String Manipulation
 
 ```typescript
-// Basic conditional type
-type IsString<T> = T extends string ? true : false;
+// Capitalize
+type Greeting = `Hello ${string}`;
 
-type A = IsString<string>; // true
-type B = IsString<number>; // false
-
-// Extract function return type
-type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
-
-// Unwrap Promise type
-type Unwrap<T> = T extends Promise<infer U> ? U : T;
-
-type Result = Unwrap<Promise<string>>; // string
-```
-
-### Template Literal Types
-
-```typescript
-// Route types
-type Route = `/${string}`;
-
-// Event types
+// Event names
 type EventName = 'click' | 'hover' | 'focus';
-type Handler = `on${Capitalize<EventName>}`; // 'onClick' | 'onHover' | 'onFocus'
+type Handler = `on${Capitalize<EventName>}`;
+// 'onClick' | 'onHover' | 'onFocus'
 
-// Combine string literals
+// Combine literals
 type Color = 'red' | 'blue';
-type Size = 'small' | 'large';
-type Variant = `${Color}-${Size}`; // 'red-small' | 'red-large' | 'blue-small' | 'blue-large'
+type Size = 'sm' | 'lg';
+type Variant = `${Color}-${Size}`;
+// 'red-sm' | 'red-lg' | 'blue-sm' | 'blue-lg'
 ```
 
-## Practical Patterns
-
-### API Response Types
+## Type-Safe Event Emitters
 
 ```typescript
-// Generic API response
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message?: string;
-}
-
-// Success/Error result
-type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E };
-
-async function fetchUser(id: string): Promise<Result<User>> {
-  try {
-    const user = await api.getUser(id);
-    return { success: true, data: user };
-  } catch (error) {
-    return { success: false, error: error as Error };
-  }
-}
-```
-
-### Form Handling
-
-```typescript
-// Form field types
-interface FormField<T> {
-  value: T;
-  error?: string;
-  touched: boolean;
-}
-
-// Form state
-type FormState<T> = {
-  [K in keyof T]: FormField<T[K]>;
-};
-
-// Usage
-interface LoginForm {
-  email: string;
-  password: string;
-}
-
-type LoginFormState = FormState<LoginForm>;
-// {
-//   email: FormField<string>;
-//   password: FormField<string>;
-// }
-```
-
-### Event Handlers
-
-```typescript
-// Type-safe event handlers
 type EventMap = {
   'user:login': { userId: string; timestamp: Date };
   'user:logout': { userId: string };
-  'data:updated': { id: string; data: unknown };
+  'data:update': { id: string; data: unknown };
 };
 
-class EventEmitter {
+class TypedEmitter {
   on<K extends keyof EventMap>(
     event: K,
     handler: (data: EventMap[K]) => void
@@ -494,43 +273,74 @@ class EventEmitter {
 }
 
 // Usage is fully type-safe
-const emitter = new EventEmitter();
+const emitter = new TypedEmitter();
 emitter.on('user:login', (data) => {
   // data is typed as { userId: string; timestamp: Date }
   console.log(data.userId);
 });
 ```
 
-### Branded Types
+## Branded Types
+
+Create distinct types from same primitive:
 
 ```typescript
-// Create distinct types for same underlying type
 type UserId = string & { readonly __brand: 'UserId' };
-type OrderId = string & { readonly __brand: 'OrderId' };
+type ProductId = string & { readonly __brand: 'ProductId' };
 
-function getUserId(id: string): UserId {
+function createUserId(id: string): UserId {
   return id as UserId;
 }
 
-function getOrder(orderId: OrderId) {
-  // Implementation
-}
+function getUser(id: UserId) { /* ... */ }
 
-const userId = getUserId('user-123');
-const orderId = 'order-456' as OrderId;
+const userId = createUserId('user-123');
+const productId = 'product-456' as ProductId;
 
-// This would cause a type error:
-// getOrder(userId); // Error: UserId is not assignable to OrderId
+// This is a type error:
+// getUser(productId);  // ProductId is not assignable to UserId
 ```
 
-## Configuration Patterns
+**Use when**: Need to distinguish same-typed values (IDs, tokens, etc.).
 
-### tsconfig.json Best Practices
+## Interface vs Type
+
+**Use Interface for:**
+- Object shapes
+- When extension is expected
+- Class contracts
+
+**Use Type for:**
+- Unions
+- Tuples
+- Complex computed types
+- When using utility types
+
+```typescript
+// Interface - extensible
+interface User {
+  id: string;
+  name: string;
+}
+
+interface Admin extends User {
+  role: 'admin';
+}
+
+// Type - unions
+type Status = 'idle' | 'loading' | 'success' | 'error';
+
+type Result<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+```
+
+## tsconfig.json Essential Settings
 
 ```json
 {
   "compilerOptions": {
-    // Type checking
+    // Strict type checking
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -540,77 +350,53 @@ const orderId = 'order-456' as OrderId;
     "moduleResolution": "bundler",
     "module": "ESNext",
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
 
     // Emit
     "declaration": true,
-    "declarationMap": true,
     "sourceMap": true,
-    "removeComments": false,
 
     // Interop
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
 
-    // Skip lib check for faster builds
+    // Performance
     "skipLibCheck": true,
 
     // Path mapping
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@components/*": ["src/components/*"]
+      "@/*": ["src/*"]
     }
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  }
 }
 ```
+
+**Always enable**: `strict`, `noUncheckedIndexedAccess`, `forceConsistentCasingInFileNames`
 
 ## Best Practices
 
-### 1. Type Everything
+### 1. Avoid `any`
+
 ```typescript
-// Bad: Implicit any
-function process(data) {
+// Bad
+function process(data: any) {
   return data.value;
 }
 
-// Good: Explicit types
-function process(data: { value: string }): string {
+// Good - use proper types
+function process(data: { value: string }) {
   return data.value;
 }
-```
 
-### 2. Use Readonly Where Appropriate
-```typescript
-// Immutable data structures
-interface User {
-  readonly id: string;
-  name: string;
-}
-
-// Readonly arrays
-function processItems(items: readonly string[]): string {
-  // Cannot mutate items
-  return items.join(',');
+// Good - use unknown for truly unknown
+function parse(json: string): unknown {
+  return JSON.parse(json);
 }
 ```
 
-### 3. Prefer Union Types Over Enums
-```typescript
-// Instead of enum
-enum Status {
-  Idle = 'idle',
-  Loading = 'loading',
-}
+### 2. Use `const` Assertions
 
-// Prefer union type
-type Status = 'idle' | 'loading' | 'success' | 'error';
-```
-
-### 4. Use const Assertions
 ```typescript
 // Instead of
 const colors = ['red', 'blue']; // string[]
@@ -625,13 +411,41 @@ const config = {
 } as const;
 ```
 
-### 5. Leverage Type Narrowing
+### 3. Prefer Union Types Over Enums
+
+```typescript
+// Instead of enum
+enum Status {
+  Idle = 'idle',
+  Loading = 'loading',
+}
+
+// Prefer union type
+type Status = 'idle' | 'loading' | 'success' | 'error';
+```
+
+**Why**: Simpler, more flexible, better tree-shaking.
+
+### 4. Use `readonly` for Immutability
+
+```typescript
+interface User {
+  readonly id: string;
+  name: string;
+}
+
+function processItems(items: readonly string[]) {
+  // Cannot mutate items
+  return items.join(',');
+}
+```
+
+### 5. Type Narrowing
+
 ```typescript
 function process(value: string | number | null) {
   // Null check
-  if (value === null) {
-    return 'null';
-  }
+  if (value === null) return 'null';
 
   // typeof check
   if (typeof value === 'string') {
@@ -645,43 +459,47 @@ function process(value: string | number | null) {
 
 ## Common Pitfalls
 
-### ❌ Type Assertions (Use Sparingly)
+**Type assertions (`as`)** - Use sparingly:
 ```typescript
-// Avoid type assertions when possible
-const user = data as User; // Bypasses type checking
+// Avoid when possible
+const user = data as User;
 
 // Better: Validate at runtime
-function isUser(data: unknown): data is User {
-  return typeof data === 'object' && data !== null && 'id' in data;
-}
-
 if (isUser(data)) {
   // data is User here
 }
 ```
 
-### ❌ Non-null Assertion (!)
+**Non-null assertion (`!`)** - Dangerous:
 ```typescript
-// Avoid when possible
-const user = getUser()!; // Might be null!
+// Avoid
+const user = getUser()!;
 
-// Better: Handle null case
+// Better: Handle null
 const user = getUser();
 if (user) {
   // Use user safely
 }
 ```
 
-### ❌ Empty Object Type
+**Empty object type `{}`** - Too permissive:
 ```typescript
-// Bad: Too permissive
-const config: {} = 'anything'; // Allows non-null values
+// Bad
+const config: {} = 'anything';
 
-// Good: Use object or Record
+// Good
 const config: object = { key: 'value' };
 const settings: Record<string, unknown> = { key: 'value' };
 ```
 
----
+## Type Design Checklist
 
-*This skill provides comprehensive TypeScript patterns for type-safe development. Reference it for type definitions, generics, utilities, and best practices.*
+When designing types:
+- [ ] Use strict mode
+- [ ] Avoid `any` - use `unknown` or proper types
+- [ ] Use discriminated unions for state
+- [ ] Use const assertions for literal types
+- [ ] Prefer interfaces for objects, types for unions
+- [ ] Use readonly where appropriate
+- [ ] Provide good error messages (use descriptive types)
+- [ ] Consider future extension needs
