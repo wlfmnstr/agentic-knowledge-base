@@ -1,94 +1,45 @@
 ---
-name: component-patterns
-description: Modern React/component architecture patterns, composition, and best practices
+name: "component-patterns"
+description: "React component architecture and composition patterns for type-safe development. Use when designing component APIs, implementing composition patterns, or structuring component libraries."
 ---
 
-# Component Patterns Skill
+# Component Architecture Patterns
 
-Expert knowledge for building modern, reusable components with React and similar frameworks.
+## Component API Design
 
-## Component Design Principles
+### Props Interface Pattern
 
-### Single Responsibility
-Each component should do one thing well.
-
-```tsx
-// Bad: Component does too much
-function UserProfilePage() {
-  // Fetching, rendering, form handling all in one
-}
-
-// Good: Separated concerns
-function UserProfilePage() {
-  return (
-    <>
-      <UserHeader />
-      <UserStats />
-      <UserContent />
-    </>
-  );
-}
-```
-
-### Composition Over Inheritance
-Build complex UIs from simple components.
-
-```tsx
-// Compose small, focused components
-function Card({ children }) {
-  return <div className="card">{children}</div>;
-}
-
-function CardHeader({ children }) {
-  return <div className="card-header">{children}</div>;
-}
-
-function CardBody({ children }) {
-  return <div className="card-body">{children}</div>;
-}
-
-// Use them together
-<Card>
-  <CardHeader>Title</CardHeader>
-  <CardBody>Content</CardBody>
-</Card>
-```
-
-### Props Interface Design
-Clear, type-safe props.
-
-```tsx
-interface ButtonProps {
+```typescript
+interface ComponentProps {
   // Required props
   children: React.ReactNode;
-  onClick: () => void;
 
-  // Optional props with defaults
+  // Variants (discriminated unions preferred)
   variant?: 'primary' | 'secondary' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
 
-  // Style customization
+  // Optional with defaults
+  size?: 'sm' | 'md' | 'lg';
+
+  // Callbacks
+  onClick?: () => void;
+
+  // Style override
   className?: string;
 
-  // Accessibility
+  // Pass-through HTML attrs
   'aria-label'?: string;
 }
 
-function Button({
+function Component({
   children,
-  onClick,
   variant = 'primary',
   size = 'md',
-  disabled = false,
   className,
   ...rest
-}: ButtonProps) {
+}: ComponentProps) {
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`btn btn-${variant} btn-${size} ${className}`}
+      className={`btn-${variant} btn-${size} ${className}`}
       {...rest}
     >
       {children}
@@ -97,154 +48,84 @@ function Button({
 }
 ```
 
-## TypeScript Patterns
+### Extending HTML Elements
 
-### Component Props Types
-
-```tsx
-// Basic props
-interface Props {
-  title: string;
-  count: number;
-}
-
-// Props with children
-interface PropsWithChildren {
-  children: React.ReactNode;
-}
-
-// Props with optional children
-interface Props {
-  title: string;
-  children?: React.ReactNode;
-}
-
-// Props extending HTML attributes
+```typescript
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary';
 }
 
-// Generic components
-interface ListProps<T> {
-  items: T[];
-  renderItem: (item: T) => React.ReactNode;
-}
-
-function List<T>({ items, renderItem }: ListProps<T>) {
-  return <ul>{items.map(renderItem)}</ul>;
-}
+// Gets all button attributes + custom props
 ```
 
-### Discriminated Unions
-
-```tsx
-// Different props based on variant
-type ButtonProps =
-  | { variant: 'link'; href: string; onClick?: never }
-  | { variant: 'button'; onClick: () => void; href?: never };
-
-function Button(props: ButtonProps) {
-  if (props.variant === 'link') {
-    return <a href={props.href}>Link</a>;
-  }
-  return <button onClick={props.onClick}>Button</button>;
-}
-```
-
-## Component Patterns
+## Composition Patterns
 
 ### Compound Components
 
-Components that work together with shared state.
+For components with shared implicit state:
 
-```tsx
-interface TabsContextValue {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
+```typescript
+const TabsContext = React.createContext<{
+  active: string;
+  setActive: (id: string) => void;
+} | null>(null);
 
-const TabsContext = React.createContext<TabsContextValue | null>(null);
-
-function Tabs({ children, defaultTab }: { children: React.ReactNode; defaultTab: string }) {
-  const [activeTab, setActiveTab] = React.useState(defaultTab);
-
+function Tabs({ children, defaultTab }: {
+  children: React.ReactNode;
+  defaultTab: string;
+}) {
+  const [active, setActive] = React.useState(defaultTab);
   return (
-    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+    <TabsContext.Provider value={{ active, setActive }}>
       {children}
     </TabsContext.Provider>
   );
 }
 
-function TabList({ children }: { children: React.ReactNode }) {
-  return <div role="tablist">{children}</div>;
-}
-
 function Tab({ id, children }: { id: string; children: React.ReactNode }) {
-  const context = React.useContext(TabsContext);
-  if (!context) throw new Error('Tab must be used within Tabs');
-
-  const isActive = context.activeTab === id;
+  const ctx = React.useContext(TabsContext);
+  if (!ctx) throw new Error('Tab must be within Tabs');
 
   return (
     <button
-      role="tab"
-      aria-selected={isActive}
-      onClick={() => context.setActiveTab(id)}
+      onClick={() => ctx.setActive(id)}
+      aria-selected={ctx.active === id}
     >
       {children}
     </button>
   );
 }
 
-function TabPanel({ id, children }: { id: string; children: React.ReactNode }) {
-  const context = React.useContext(TabsContext);
-  if (!context) throw new Error('TabPanel must be used within Tabs');
-
-  if (context.activeTab !== id) return null;
-
-  return <div role="tabpanel">{children}</div>;
-}
-
 // Usage
-<Tabs defaultTab="overview">
-  <TabList>
-    <Tab id="overview">Overview</Tab>
-    <Tab id="docs">Docs</Tab>
-  </TabList>
-  <TabPanel id="overview">Overview content</TabPanel>
-  <TabPanel id="docs">Docs content</TabPanel>
+<Tabs defaultTab="one">
+  <Tab id="one">Tab 1</Tab>
+  <Tab id="two">Tab 2</Tab>
 </Tabs>
 ```
 
+**Use when**: Components need to coordinate state implicitly.
+
 ### Render Props
 
-Pass rendering logic as a prop.
+For flexible rendering logic:
 
-```tsx
-interface RenderProps<T> {
-  data: T;
-  loading: boolean;
-  error: Error | null;
-}
-
+```typescript
 function DataFetcher<T>({
   url,
   render,
 }: {
   url: string;
-  render: (props: RenderProps<T | null>) => React.ReactNode;
+  render: (props: {
+    data: T | null;
+    loading: boolean;
+    error: Error | null;
+  }) => React.ReactNode;
 }) {
   const [data, setData] = React.useState<T | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
-  React.useEffect(() => {
-    fetch(url)
-      .then(res => res.json())
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [url]);
+  // Fetch logic...
 
   return <>{render({ data, loading, error })}</>;
 }
@@ -254,21 +135,23 @@ function DataFetcher<T>({
   url="/api/users"
   render={({ data, loading, error }) => {
     if (loading) return <Spinner />;
-    if (error) return <Error message={error.message} />;
-    return <UserList users={data} />;
+    if (error) return <Error error={error} />;
+    return <List items={data} />;
   }}
 />
 ```
 
-### Custom Hooks
+**Use when**: Rendering logic varies significantly between uses.
 
-Extract reusable logic.
+## Custom Hooks
 
-```tsx
-function useLocalStorage<T>(key: string, initialValue: T) {
+Extract reusable logic:
+
+```typescript
+function useLocalStorage<T>(key: string, initial: T) {
   const [value, setValue] = React.useState<T>(() => {
     const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : initialValue;
+    return stored ? JSON.parse(stored) : initial;
   });
 
   React.useEffect(() => {
@@ -281,214 +164,219 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 // Usage
 function ThemeToggle() {
   const [theme, setTheme] = useLocalStorage('theme', 'light');
-
-  return (
-    <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-      Current: {theme}
-    </button>
-  );
+  return <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} />;
 }
 ```
 
-### Controlled vs Uncontrolled
+**Extract when**: Logic is reused across 2+ components.
 
-```tsx
-// Controlled: Parent manages state
-function ControlledInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return <input value={value} onChange={e => onChange(e.target.value)} />;
-}
-
-// Uncontrolled: Component manages own state
-function UncontrolledInput({ defaultValue }: { defaultValue?: string }) {
-  const ref = React.useRef<HTMLInputElement>(null);
-
-  return <input ref={ref} defaultValue={defaultValue} />;
-}
-```
-
-## Performance Optimization
+## Performance Patterns
 
 ### Memoization
 
-```tsx
-// Memoize expensive computations
-function ExpensiveComponent({ data }: { data: Data[] }) {
-  const processedData = React.useMemo(
-    () => expensiveProcessing(data),
-    [data]
-  );
+```typescript
+// Expensive computation
+const processed = React.useMemo(
+  () => expensiveOperation(data),
+  [data]
+);
 
-  return <div>{/* Use processedData */}</div>;
-}
-
-// Memoize components
-const MemoizedChild = React.memo(function Child({ value }: { value: string }) {
+// Component memoization
+const Child = React.memo(function Child({ value }: { value: string }) {
   return <div>{value}</div>;
 });
 
-// Memoize callbacks
-function Parent() {
-  const [count, setCount] = React.useState(0);
-
-  const handleClick = React.useCallback(() => {
-    setCount(c => c + 1);
-  }, []);
-
-  return <MemoizedChild value="constant" />;
-}
+// Callback stability
+const handleClick = React.useCallback(() => {
+  doSomething(id);
+}, [id]);
 ```
 
-### Code Splitting
+**Use when**:
+- `useMemo`: Expensive computation, runs every render
+- `React.memo`: Component re-renders with same props
+- `useCallback`: Callback passed to memoized children
 
-```tsx
-// Lazy load components
-const HeavyComponent = React.lazy(() => import('./HeavyComponent'));
+**Don't overuse**: Profile first. Premature optimization adds complexity.
 
-function App() {
+## TypeScript Patterns
+
+### Generic Components
+
+```typescript
+interface ListProps<T> {
+  items: T[];
+  renderItem: (item: T) => React.ReactNode;
+  keyExtractor: (item: T) => string;
+}
+
+function List<T>({ items, renderItem, keyExtractor }: ListProps<T>) {
   return (
-    <React.Suspense fallback={<Loading />}>
-      <HeavyComponent />
-    </React.Suspense>
+    <ul>
+      {items.map(item => (
+        <li key={keyExtractor(item)}>
+          {renderItem(item)}
+        </li>
+      ))}
+    </ul>
   );
 }
+
+// Usage is fully typed
+<List
+  items={users}
+  renderItem={user => <span>{user.name}</span>}
+  keyExtractor={user => user.id}
+/>
+```
+
+### Discriminated Union Props
+
+```typescript
+type ButtonProps =
+  | { variant: 'link'; href: string; onClick?: never }
+  | { variant: 'button'; onClick: () => void; href?: never };
+
+// TypeScript enforces: link must have href, button must have onClick
 ```
 
 ## Accessibility Patterns
 
-### Semantic HTML
+### Semantic HTML First
 
-```tsx
-// Good: Semantic elements
-function Article({ title, content }) {
-  return (
-    <article>
-      <h1>{title}</h1>
-      <p>{content}</p>
-    </article>
-  );
-}
+```typescript
+// Good
+<nav>
+  <ul>
+    <li><a href="/docs">Docs</a></li>
+  </ul>
+</nav>
 
-// Bad: Non-semantic
-function Article({ title, content }) {
-  return (
-    <div>
-      <div className="title">{title}</div>
-      <div className="content">{content}</div>
-    </div>
-  );
-}
+// Avoid
+<div className="nav">
+  <div onClick={...}>Docs</div>
+</div>
 ```
 
-### ARIA Attributes
+### ARIA When Needed
 
-```tsx
-function Modal({ isOpen, onClose, children }) {
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-      hidden={!isOpen}
-    >
-      <h2 id="modal-title">Modal Title</h2>
-      <div>{children}</div>
-      <button onClick={onClose} aria-label="Close modal">
-        ×
-      </button>
-    </div>
-  );
-}
+```typescript
+<button
+  onClick={onClose}
+  aria-label="Close dialog"
+  aria-describedby="dialog-description"
+>
+  ×
+</button>
 ```
+
+**When to use ARIA**:
+- Non-semantic elements with semantic roles
+- Additional context for screen readers
+- Dynamic state (aria-expanded, aria-selected)
+
+**When not to use**: Semantic HTML already provides meaning.
 
 ### Keyboard Navigation
 
-```tsx
-function Dropdown({ items }) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [selectedIndex, setSelectedIndex] = React.useState(0);
+```typescript
+function Dropdown({ items }: { items: Item[] }) {
+  const [selected, setSelected] = React.useState(0);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(i => Math.min(i + 1, items.length - 1));
+        setSelected(s => Math.min(s + 1, items.length - 1));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(i => Math.max(i - 1, 0));
+        setSelected(s => Math.max(s - 1, 0));
         break;
       case 'Enter':
         e.preventDefault();
-        // Select item
+        handleSelect(items[selected]);
         break;
       case 'Escape':
-        setIsOpen(false);
+        close();
         break;
     }
   };
 
-  return (
-    <div onKeyDown={handleKeyDown}>
-      {/* Dropdown implementation */}
-    </div>
-  );
+  return <div onKeyDown={handleKeyDown}>...</div>;
 }
 ```
 
-## Styling Patterns
+## Error Boundaries
 
-### CSS Modules
+```typescript
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
 
-```tsx
-import styles from './Button.module.css';
-
-function Button({ children, variant = 'primary' }) {
-  return (
-    <button className={`${styles.button} ${styles[variant]}`}>
-      {children}
-    </button>
-  );
-}
-```
-
-### CSS-in-JS
-
-```tsx
-import { styled } from 'styled-components';
-
-const Button = styled.button<{ variant: 'primary' | 'secondary' }>`
-  padding: 0.5rem 1rem;
-  background: ${props => props.variant === 'primary' ? 'blue' : 'gray'};
-  color: white;
-  border: none;
-  border-radius: 4px;
-
-  &:hover {
-    opacity: 0.8;
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
-`;
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('Caught error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+// Usage
+<ErrorBoundary fallback={<ErrorFallback />}>
+  <App />
+</ErrorBoundary>
 ```
 
-### Utility Classes (Tailwind)
+**Note**: Error boundaries catch rendering errors, not event handler errors.
 
-```tsx
-function Button({ children, variant = 'primary' }) {
-  const baseClasses = 'px-4 py-2 rounded font-medium';
-  const variantClasses = {
-    primary: 'bg-blue-500 text-white hover:bg-blue-600',
-    secondary: 'bg-gray-500 text-white hover:bg-gray-600',
-  };
+## Component Organization
+
+### File Structure
+
+```
+components/
+  Button/
+    Button.tsx
+    Button.module.css
+    Button.test.tsx
+    index.ts          # Export
+```
+
+### Component Template
+
+```typescript
+import styles from './Component.module.css';
+
+interface ComponentProps {
+  // Props
+}
+
+/**
+ * Component description
+ *
+ * @example
+ * <Component prop="value" />
+ */
+export function Component({
+  prop,
+}: ComponentProps) {
+  // Implementation
 
   return (
-    <button className={`${baseClasses} ${variantClasses[variant]}`}>
-      {children}
-    </button>
+    <div className={styles.root}>
+      {/* JSX */}
+    </div>
   );
 }
 ```
@@ -497,13 +385,13 @@ function Button({ children, variant = 'primary' }) {
 
 ### Component Testing
 
-```tsx
+```typescript
 import { render, screen, fireEvent } from '@testing-library/react';
 
 describe('Button', () => {
   it('calls onClick when clicked', () => {
     const handleClick = vi.fn();
-    render(<Button onClick={handleClick}>Click me</Button>);
+    render(<Button onClick={handleClick}>Click</Button>);
 
     fireEvent.click(screen.getByRole('button'));
 
@@ -511,73 +399,39 @@ describe('Button', () => {
   });
 
   it('is disabled when disabled prop is true', () => {
-    render(<Button disabled onClick={() => {}}>Click me</Button>);
+    render(<Button disabled onClick={() => {}}>Click</Button>);
 
     expect(screen.getByRole('button')).toBeDisabled();
   });
 });
 ```
 
-## Error Boundaries
+**Test user behavior, not implementation.**
 
-```tsx
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+## Common Pitfalls
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
+**Prop drilling** (passing props through many levels):
+- Solution: Context API or state management
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught:', error, errorInfo);
-  }
+**Missing keys in lists**:
+- Always provide stable, unique keys
+- Don't use array index as key if list can reorder
 
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} />;
-    }
+**Inline function definitions**:
+- Creates new function every render
+- Use `useCallback` if passed to memoized children
 
-    return this.props.children;
-  }
-}
-```
+**Mutating state**:
+- Always return new objects/arrays
+- Use spread syntax or immutability helpers
 
-## Best Practices
+## Decision Checklist
 
-1. **Type everything:** Full TypeScript coverage
-2. **Props interface first:** Define types before implementation
-3. **Composition:** Small, focused components
-4. **Accessibility:** Semantic HTML, ARIA, keyboard support
-5. **Performance:** Memoize expensive operations
-6. **Testing:** Test user behavior, not implementation
-7. **Error handling:** Graceful failures, error boundaries
-8. **Documentation:** JSDoc for complex props
-9. **Consistency:** Follow established patterns
-10. **Readability:** Clear naming, logical structure
-
-## Anti-Patterns to Avoid
-
-❌ **Prop drilling:** Pass props through many levels
-✅ **Use Context:** Share state at the right level
-
-❌ **Massive components:** 500+ line components
-✅ **Break down:** Extract logical pieces
-
-❌ **Inline functions in JSX:** New function every render
-✅ **useCallback:** Memoize callbacks
-
-❌ **Mutating state:** `state.value = newValue`
-✅ **Immutable updates:** `setState(newValue)`
-
-❌ **Missing keys:** `items.map(item => <div>...)`
-✅ **Unique keys:** `items.map(item => <div key={item.id}>...)`
-
----
-
-*This skill provides comprehensive component patterns for modern React development. Reference it when building components and component architecture.*
+When designing components:
+- [ ] Props interface is clear and type-safe
+- [ ] Variants use discriminated unions if mutually exclusive
+- [ ] Accessibility requirements met (semantic HTML, ARIA, keyboard)
+- [ ] Performance considerations addressed (memoization if needed)
+- [ ] Error handling present
+- [ ] Composable with other components
+- [ ] Tested (key user interactions)

@@ -1,259 +1,155 @@
 ---
-name: static-site-generation
-description: Patterns and best practices for static site generation, file-based routing, and build optimization
+name: "static-site-generation"
+description: "Framework evaluation criteria and deployment patterns for static site generators with GitHub Pages. Use when choosing SSG frameworks, configuring builds, or setting up GitHub Pages deployment."
 ---
 
-# Static Site Generation Skill
+# Static Site Generation
 
-Expert knowledge for building static sites with modern frameworks.
+## Framework Evaluation Criteria
 
-## Core Concepts
+When evaluating SSG frameworks, prioritize:
 
-### What is Static Site Generation (SSG)?
+1. **TypeScript support**: First-class, not bolted-on
+2. **MDX integration**: Built-in or official plugin
+3. **GitHub Pages compatibility**: Base path support, static output
+4. **Content collections**: Type-safe content with schema validation
+5. **Build performance**: Fast rebuilds for iteration
+6. **DX**: Good error messages, debugging tools
 
-Static site generation builds HTML pages at build time rather than runtime. Benefits:
+## Framework Comparison for Knowledge Base
 
-- **Performance:** Pre-rendered HTML loads instantly
-- **Security:** No server-side code execution, reduced attack surface
-- **Scalability:** Static files are easy to cache and serve via CDN
-- **Reliability:** No database or backend dependencies
-- **Cost:** Cheap to host (GitHub Pages, Netlify, Vercel, etc.)
+**Astro** (Recommended for content-first sites)
+- Pros: Best MDX support, fast builds, content collections, multi-framework
+- Cons: Newer ecosystem, fewer community plugins
+- Best for: Documentation, knowledge bases, content-heavy sites
 
-### When to Use SSG
+**Next.js with Static Export**
+- Pros: Huge ecosystem, familiar to React devs, mature tooling
+- Cons: Overkill for simple sites, larger bundles, requires explicit static config
+- Best for: Apps needing both static and dynamic capabilities
 
-Perfect for:
-- Documentation sites
-- Blogs and content sites
-- Marketing sites
-- Knowledge bases (like this project!)
-- Any content-driven site with infrequent updates
+**VitePress**
+- Pros: Extremely fast, excellent docs focus, simple
+- Cons: Vue-specific, less flexible for complex needs
+- Best for: Pure documentation sites with minimal custom needs
 
-Not ideal for:
-- Highly dynamic data
-- Personalized content that varies per user
-- Real-time applications
-- Frequently updated data (unless using ISR or similar)
+**Avoid**: Gatsby (complex, slow builds, declining momentum)
 
-## Popular SSG Frameworks
+## GitHub Pages Configuration
 
-### Astro
-- **Best for:** Content-focused sites, MDX support, multi-framework
-- **Pros:** Fast, flexible, brings-your-own-framework, excellent MDX
-- **Cons:** Newer ecosystem, fewer plugins than Next.js
-- **TypeScript:** Excellent support
-- **GitHub Pages:** Good support
+### Critical Settings
 
-### Next.js (with static export)
-- **Best for:** React apps, large ecosystems, SSG + SSR hybrid
-- **Pros:** Huge ecosystem, excellent docs, powerful features
-- **Cons:** Overkill for simple sites, larger bundle size
-- **TypeScript:** Excellent support
-- **GitHub Pages:** Works but needs configuration
-
-### VitePress
-- **Best for:** Documentation, Vue-based, fast
-- **Pros:** Extremely fast, great for docs, simple
-- **Cons:** Less flexible than Astro/Next, Vue-specific
-- **TypeScript:** Good support
-- **GitHub Pages:** Excellent support
-
-### Gatsby
-- **Best for:** Complex data sourcing, GraphQL fans
-- **Pros:** Powerful data layer, large plugin ecosystem
-- **Cons:** Complex, slower builds, heavier learning curve
-- **TypeScript:** Good support
-- **GitHub Pages:** Good support
-
-## File-Based Routing
-
-Most SSG frameworks use file-based routing where directory structure maps to URLs:
-
-```
-src/pages/
-  index.astro          → /
-  about.astro          → /about
-  docs/
-    index.astro        → /docs
-    getting-started.md → /docs/getting-started
-    api/
-      auth.md          → /docs/api/auth
+**Base Path for Subpath Deployment:**
+```javascript
+// Required if deploying to github.io/repo-name/
+export default defineConfig({
+  site: 'https://username.github.io',
+  base: '/repo-name/',  // Must include trailing slash
+});
 ```
 
-### Routing Patterns
+**Output Directory:**
+- Astro: `dist/` (default)
+- Next.js: `out/` (with `output: 'export'`)
+- VitePress: `.vitepress/dist/`
 
-**Index files:** `index.{ext}` maps to directory root
-**Dynamic routes:** `[slug].astro` matches any value
-**Rest parameters:** `[...path].astro` catches all paths
-**Optional parameters:** `[[optional]].astro` optionally matches
+**404 Handling:**
+- Create `404.html` in output directory
+- For SPAs: All routes → `404.html` (GitHub Pages limitation)
 
-## Content Collections
+### Deployment Pattern
 
-Modern frameworks provide content collection APIs:
+**Using GitHub Actions (Recommended):**
+```yaml
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+      - uses: actions/deploy-pages@v4
+```
+
+**Repository Settings:**
+- Pages → Source: "GitHub Actions"
+- Branch deployment not needed with Actions
+
+## Build Optimization Checklist
+
+Before marking build complete:
+- [ ] TypeScript strict mode enabled
+- [ ] Base path configured correctly
+- [ ] All routes generate static HTML
+- [ ] Assets use correct paths (relative to base)
+- [ ] 404 page exists
+- [ ] Build succeeds with zero errors
+- [ ] Deployment workflow tested
+
+## Content Collections Pattern
+
+Define schemas for type-safe content:
 
 ```typescript
-// Define a collection schema
 import { z, defineCollection } from 'astro:content';
 
-const docsCollection = defineCollection({
+const docs = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
     date: z.date(),
-    tags: z.array(z.string()).optional(),
     draft: z.boolean().default(false),
   }),
 });
 
-export const collections = {
-  'docs': docsCollection,
-};
+export const collections = { docs };
 ```
 
-Benefits:
-- Type-safe content access
-- Frontmatter validation
-- Easy querying and filtering
-- Great DX with autocomplete
+Benefits: Type safety, validation at build time, autocomplete in editor.
 
-## Build Optimization
+## Common Pitfalls
 
-### Strategies
+**Incorrect base path:**
+- Symptom: Routes work locally, 404 in production
+- Fix: Ensure `base` matches repo name, includes trailing slash
 
-1. **Incremental builds:** Only rebuild changed pages
-2. **Parallel processing:** Build pages in parallel
-3. **Asset optimization:** Image optimization, minification
-4. **Code splitting:** Split JavaScript bundles by route
-5. **Caching:** Cache dependencies and build artifacts
+**Mixed path types:**
+- Symptom: Some assets load, others don't
+- Fix: Use framework's path helpers consistently
 
-### Performance Targets
+**Large bundle size:**
+- Symptom: Slow initial load
+- Fix: Enable code splitting, lazy load heavy components
 
-- **Build time:** Under 2 minutes for typical sites
-- **Page size:** Under 100KB initial HTML+CSS+JS
-- **Time to Interactive:** Under 2 seconds on 3G
-- **Lighthouse score:** 90+ across all metrics
+**Missing TypeScript config:**
+- Symptom: Type errors not caught during build
+- Fix: Enable strict mode, include all source files
 
-## MDX Integration
+## Decision Template
 
-MDX combines Markdown with JSX/components:
+When choosing framework, document in CLAUDE.md:
 
-```mdx
----
-title: My Document
----
+```markdown
+## Framework Decision: [Name]
 
-# {frontmatter.title}
-
-This is regular markdown content.
-
-<CustomComponent prop="value" />
-
-You can use components inline!
+**Chosen:** [Framework]
+**Rationale:** [Why - 2-3 key reasons]
+**Alternatives considered:** [What else, why not]
+**Trade-offs:** [What we gain vs. lose]
 ```
 
-### MDX Configuration
+## Quick Start Validation
 
-Common plugins:
-- **remark-gfm:** GitHub-flavored markdown
-- **remark-toc:** Table of contents generation
-- **rehype-pretty-code:** Syntax highlighting
-- **rehype-slug:** Heading IDs
-- **rehype-autolink-headings:** Clickable heading links
-
-## Static Site Deployment
-
-### GitHub Pages
-
-Requirements:
-- Static HTML output in a directory
-- Correct base path configuration
-- CNAME file for custom domains (optional)
-
-Configuration:
-```javascript
-// Set base path for subpath deployment
-base: '/repo-name/'
-```
-
-### Deployment Workflow
-
-1. **Build:** Generate static files
-2. **Test:** Verify build output
-3. **Deploy:** Upload to hosting
-4. **Validate:** Check deployment works
-
-## Common Patterns
-
-### Layout System
-
-Use layout components for consistent structure:
-
-```typescript
----
-// Layout.astro
-const { title, description } = Astro.props;
----
-<html>
-  <head>
-    <title>{title}</title>
-    <meta name="description" content={description} />
-  </head>
-  <body>
-    <header>...</header>
-    <main>
-      <slot />
-    </main>
-    <footer>...</footer>
-  </body>
-</html>
-```
-
-### Navigation Generation
-
-Generate nav from content structure:
-
-```typescript
-import { getCollection } from 'astro:content';
-
-const docs = await getCollection('docs');
-const nav = docs.map(doc => ({
-  title: doc.data.title,
-  slug: doc.slug,
-}));
-```
-
-### Search Implementation
-
-Options for static site search:
-- **Client-side:** Lunr.js, Fuse.js, Pagefind
-- **API-based:** Algolia, Meilisearch
-- **Build-time indexing:** Generate search index during build
-
-## Best Practices
-
-1. **Content-first:** Design for content creators
-2. **Performance:** Optimize for speed
-3. **Accessibility:** Semantic HTML, ARIA where needed
-4. **SEO-friendly:** Even internal tools benefit from good structure
-5. **Type-safe:** Use TypeScript for everything
-6. **DX-focused:** Great developer experience leads to better outcomes
-
-## Debugging Tips
-
-- Use framework dev tools
-- Check build output directory structure
-- Verify paths are correct (absolute vs. relative)
-- Test locally with production build
-- Check browser console for errors
-- Validate generated HTML
-
-## Resources
-
-- Framework docs (always check official docs first)
-- MDX documentation
-- GitHub Pages documentation
-- Web.dev for performance guidance
-- WCAG for accessibility standards
-
----
-
-*This skill provides foundational knowledge for static site generation. Reference it when making framework decisions or implementing SSG patterns.*
+After framework initialization:
+1. Run build → Should succeed with zero errors
+2. Check output directory → HTML files present
+3. Test locally → `npx serve dist` → All routes work
+4. Deploy to GitHub Pages → All routes work with base path
+5. Check console → No 404s on assets
